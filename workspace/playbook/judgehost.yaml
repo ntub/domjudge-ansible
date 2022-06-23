@@ -1,0 +1,41 @@
+- name: Wait for domserver started
+  ansible.builtin.wait_for:
+    host: "{{ DOMSERVER_HOST }}"
+    port: 80
+    delay: 10
+
+- name: Create judgehosts
+  community.docker.docker_container:
+    name: "judgehost_{{ item }}"
+    hostname: "judgehost-{{ item }}"
+    image: "ntubapp/judgehost:{{ DOMJUDGE_VERSION }}"
+    restart_policy: "{{ DOCKER_RESTART }}"
+    privileged: true
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    env:
+      CONTAINER_TIMEZONE: "{{ TIMEZONE }}"
+      DAEMON_ID: "{{ item }}"
+      DOMSERVER_BASEURL: "http://{{ DOMSERVER_HOST }}"
+      JUDGEDAEMON_USERNAME: "{{ JUDGEDAEMON_USERNAME }}"
+      JUDGEDAEMON_PASSWORD: "{{ JUDGEDAEMON_PASSWORD }}"
+  with_sequence: "count={{ JUDGEHOST_COUNT }}"
+  when: "inventory_hostname == 'domjudge'"
+
+
+- name: Create judgehosts
+  community.docker.docker_container:
+    name: "{{ inventory_hostname }}"
+    hostname: "{{ inventory_hostname }}"
+    image: "ntubapp/judgehost:{{ DOMJUDGE_VERSION }}"
+    restart_policy: "{{ DOCKER_RESTART }}"
+    privileged: true
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    env:
+      CONTAINER_TIMEZONE: "{{ TIMEZONE }}"
+      DAEMON_ID: "{{ inventory_hostname | split('judgehost_') | last | int }}"
+      DOMSERVER_BASEURL: "http://{{ DOMSERVER_HOST }}"
+      JUDGEDAEMON_USERNAME: "{{ JUDGEDAEMON_USERNAME }}"
+      JUDGEDAEMON_PASSWORD: "{{ JUDGEDAEMON_PASSWORD }}"
+  when: "inventory_hostname is match('judgehost_*')"

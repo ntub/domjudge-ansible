@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "domjudge-ansible"
+version = "0.1.0"
+description = ""
+authors = ["jasonxie <x5758x@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+ansible = "^6.0.0"
+docker = "^5.0.3"
+
+[tool.poetry.dev-dependencies]
+ansible-lint = "^6.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

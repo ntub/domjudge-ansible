@@ -1,0 +1,45 @@
+---
+- name: Deploy DomJudge
+  hosts: all
+  become: true
+  vars:
+    domserver_hosts:
+      - domjudge
+      - domserver
+  tasks:
+    - name: Gather the package facts
+      ansible.builtin.package_facts:
+
+    - name: Setup remote server
+      ansible.builtin.include_tasks: "{{ ansible_distribution | lower }}.yaml"
+      when: "'docker-ce' not in ansible_facts.packages"
+
+    - name: Setup Domserver
+      ansible.builtin.include_tasks: "domserver.yaml"
+      when: "inventory_hostname in domserver_hosts"
+
+    - name: Setup Judgehost
+      ansible.builtin.include_tasks: "judgehost.yaml"
+      when: "inventory_hostname is match('judgehost_*') or inventory_hostname == 'domjudge'"
+    
+    - name: Get domserver info
+      community.docker.docker_container_exec:
+        container: domserver
+        command: "cat /opt/domjudge/domserver/etc/initial_admin_password.secret"
+      register: result
+      when: "inventory_hostname in domserver_hosts"
+
+    - name: Print domserver info
+      ansible.builtin.debug:
+        msg: "{{ result.stdout }}"
+    
+    - name: Get judgehost info
+      community.docker.docker_container_exec:
+        container: domserver
+        command: "cat /opt/domjudge/domserver/etc/restapi.secret"
+      register: result
+      when: "inventory_hostname in domserver_hosts"
+
+    - name: Print judgehost info
+      ansible.builtin.debug:
+        msg: "{{ result.stdout | split | last }}"
